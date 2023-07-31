@@ -56,13 +56,13 @@ public class TgService extends TelegramLongPollingBot {
                 System.out.println("PaymentInfo: " + paymentInfo);
                 long chatId = update.getMessage().getChatId();
                 if (update.getMessage().hasPhoto()) {
-                    if (messageText.equals("/s 2")) {
+                    if (messageText.equals("/2")) {
                         sendMessage(chatId, "Каждый скидывает по " + String.valueOf(d/2));
-                    }else if(messageText.equals("/s 3")){
+                    }else if(messageText.equals("/3")){
                         sendMessage(chatId, "Каждый скидывает по " + String.valueOf(d/3));
-                    }else if(messageText.equals("/s 4")){
+                    }else if(messageText.equals("/4")){
                         sendMessage(chatId, "Каждый скидывает по " + String.valueOf(d/4));
-                    }else if(messageText.equals("/s 5")){
+                    }else if(messageText.equals("/5")){
                         sendMessage(chatId, "Каждый скидывает по " + String.valueOf(d/5));
                     }
                 }
