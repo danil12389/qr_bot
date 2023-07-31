@@ -22,9 +22,8 @@ import javax.imageio.ImageIO;
 @Service
 public class QrService {
 
-    public String decodeQRCode(File qrCodeimage) throws IOException {
-        BufferedImage bufferedImage = ImageIO.read(qrCodeimage);
-        LuminanceSource source = new BufferedImageLuminanceSource(bufferedImage);
+    public String decodeQRCode(BufferedImage qrCodeimage) throws IOException {
+        LuminanceSource source = new BufferedImageLuminanceSource(qrCodeimage);
         BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
 
         try {

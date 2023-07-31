@@ -2,8 +2,8 @@ package com.example.demo.service;
 
 import com.example.demo.config.TgConfig;
 import com.example.demo.model.GetFileEntity;
-import com.example.demo.model.Image;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.util.JSONPObject;
 import lombok.extern.log4j.Log4j2;
 import okhttp3.*;
 import org.springframework.stereotype.Component;
@@ -16,8 +16,11 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Date;
+import java.util.List;
 
 @Component
 @Log4j2
@@ -40,32 +43,33 @@ public class TgService extends TelegramLongPollingBot {
             System.out.println("New update received, message text: " + update.getMessage().getText());
             String messageText = update.getMessage().getCaption();
             try {
-                String file_path = imageUriDownloader(update.getMessage().getPhoto().get(0).getFileId()).getFile_path();
-                imageDownloader(file_path);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            File f = new File("qr_images/Sun Jul 30 22:49:35 SAMT 2023");
-
-            try {
-                System.out.println(qrService.decodeQRCode(f));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            long chatId = update.getMessage().getChatId();
-            if (update.getMessage().hasPhoto()) {
-                String file_id = update.getMessage().getPhoto().get(0).getFileId();
-                switch (messageText) {
-                    case ("/la"):
-                        sendMessage(chatId, String.valueOf(file_id.length()));
+                String file_path = imageUriDownloader(update.getMessage().getPhoto().get(update.getMessage().getPhoto().size() - 1).getFileId()).getFile_path();
+                System.out.println("Размер PhotoSize: " +update.getMessage().getPhoto().size());
+                String name = imageSaverAndDownloader(file_path);
+                File f = new File(name);
+                BufferedImage i;
+                i = ImageIO.read(f);
+                String paymentInfo = qrService.decodeQRCode(i);
+                String[] s = paymentInfo.split("&");
+                Double d = Double.valueOf(s[1].substring(2));
+                System.out.println("Массив: "  + d);
+                System.out.println("PaymentInfo: " + paymentInfo);
+                long chatId = update.getMessage().getChatId();
+                if (update.getMessage().hasPhoto()) {
+                    if (messageText.equals("/s 2")) {
+                        sendMessage(chatId, "Каждый скидывает по " + String.valueOf(d/2));
+                    }else if(messageText.equals("/s 3")){
+                        sendMessage(chatId, "Каждый скидывает по " + String.valueOf(d/3));
+                    }else if(messageText.equals("/s 4")){
+                        sendMessage(chatId, "Каждый скидывает по " + String.valueOf(d/4));
+                    }else if(messageText.equals("/s 5")){
+                        sendMessage(chatId, "Каждый скидывает по " + String.valueOf(d/5));
+                    }
                 }
-
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
+
 
 
         }
@@ -106,23 +110,11 @@ public class TgService extends TelegramLongPollingBot {
         return entity;
     }
 
-    private void imageDownloader(String file_path) throws IOException {
-        OkHttpClient okHttpClient = new OkHttpClient();
+    private String imageSaverAndDownloader(String file_path) throws IOException {
         System.out.println("URL: " + "https://api.telegram.org/file/bot" + tgConfig.getToken()+ "/" + file_path);
-        Request request = new Request.Builder()
-                .url("https://api.telegram.org/file/bot" + tgConfig.getToken()+ "/"   + file_path)
-                .build();
-        Call call = okHttpClient.newCall(request);
-        Response response = call.execute();
-        saveImage(response);
-    }
-
-    public String saveImage(Response response) throws IOException {
-        InputStream inputStream = response.body().byteStream();
-        String name = new Date().toString();
-        File file = new File("qr_images/" + name);
-        BufferedImage image = ImageIO.read(inputStream);
-        ImageIO.write(image, "jpg", file);
+        String name = "qr_images/"+ new Date() + ".png";
+        Files.write(Path.of(name), new URL("https://api.telegram.org/file/bot" + tgConfig.getToken()+ "/"   + file_path).openStream().readAllBytes());
         return name;
     }
+
 }
